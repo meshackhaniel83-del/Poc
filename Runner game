@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Onitsha Run - By Meshack</title>
+<style>
+  body { margin:0; background:#0a0e13; color:#00ff88; font-family:monospace; text-align:center; overflow:hidden; }
+  canvas { background: linear-gradient(#87CEEB, #f0f0f0); display:block; margin:10px auto; border:3px solid #00ff88; border-radius:10px; max-width:95vw; }
+  #ui { padding:10px; }
+  button { background:#00ff88; color:#000; border:none; padding:12px 25px; font-weight:bold; border-radius:8px; font-size:16px; margin:5px; }
+  h1 { margin:10px 0 0 0; }
+</style>
+</head>
+<body>
+<h1>ONITSHA RUN 🏃‍♂️</h1>
+<div id="ui">Score: <span id="score">0</span> | Best: <span id="best">0</span></div>
+<canvas id="game" width="400" height="600"></canvas>
+<div>
+  <button onclick="jump()">JUMP / TAP SCREEN</button><br>
+  <button onclick="location.reload()">RESTART</button>
+</div>
+<p style="font-size:11px; color:#666;">Made by Meshack Haniel | Tap to jump over Keke & Wheelbarrows</p>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let score = 0, best = localStorage.getItem('best')||0;
+document.getElementById('best').innerText = best;
+
+let player = { x:50, y:450, w:40, h:50, vy:0, grounded:true };
+let obstacles = [];
+let gravity = 0.8;
+let gameSpeed = 5;
+let frame = 0;
+let gameOver = false;
+
+function jump(){
+  if(player.grounded && !gameOver){ player.vy = -16; player.grounded = false; }
+  if(gameOver){ obstacles=[]; score=0; gameOver=false; player.y=450; gameSpeed=5; }
+}
+
+canvas.addEventListener('touchstart', jump);
+document.addEventListener('keydown', e=>{ if(e.code==='Space') jump(); });
+
+function spawnObstacle(){
+  const types = [{h:40,w:40},{h:30,w:60},{h:50,w:35}];
+  const t = types[Math.floor(Math.random()*types.length)];
+  obstacles.push({x:400, y:500 - t.h + 50, w:t.w, h:t.h});
+}
+
+function loop(){
+  if(gameOver){ ctx.fillStyle='rgba(0,0,0,0.7)'; ctx.fillRect(0,0,400,600); ctx.fillStyle='#fff'; ctx.font='30px monospace'; ctx.fillText('GAME OVER',100,280); ctx.font='16px monospace'; ctx.fillText('Tap RESTART',130,310); return; }
+  
+  frame++;
+  ctx.clearRect(0,0,400,600);
+  
+  // Ground
+  ctx.fillStyle='#2d2d2d'; ctx.fillRect(0,500,400,100);
+  ctx.fillStyle='#00ff88'; ctx.fillRect(0,500,400,4);
+
+  // Player physics
+  player.vy += gravity;
+  player.y += player.vy;
+  if(player.y >= 450){ player.y=450; player.vy=0; player.grounded=true; }
+
+  // Draw player
+  ctx.fillStyle='#ff3b30'; ctx.fillRect(player.x, player.y, player.w, player.h);
+  ctx.fillStyle='#000'; ctx.fillRect(player.x+10, player.y+10, 8, 8); // eye
+
+  // Obstacles
+  if(frame % 90 === 0) spawnObstacle();
+  obstacles.forEach((ob,i)=>{
+    ob.x -= gameSpeed;
+    ctx.fillStyle='#ffcc00'; ctx.fillRect(ob.x, ob.y, ob.w, ob.h);
+    // Collision
+    if(player.x < ob.x+ob.w && player.x+player.w > ob.x && player.y < ob.y+ob.h && player.y+player.h > ob.y){
+      gameOver = true;
+      if(score > best){ best=score; localStorage.setItem('best',best); }
+    }
+    if(ob.x+ob.w < 0){ obstacles.splice(i,1); score+=10; document.getElementById('score').innerText=score; gameSpeed+=0.05; }
+  });
+
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
